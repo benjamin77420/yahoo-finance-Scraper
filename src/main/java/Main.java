@@ -20,6 +20,7 @@ import java.util.logging.Logger;
 public class Main {
     //program static variables
     //database variables
+    //check if the file is uploading to git 
     static MongoClient mongoClient = new MongoClient("localhost", 27017);
     static MongoDatabase database = mongoClient.getDatabase("stocks");
     static MongoCollection<org.bson.Document> updatingStatus = database.getCollection("updatingTable");
