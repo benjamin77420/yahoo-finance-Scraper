@@ -20,39 +20,72 @@ import java.util.logging.Logger;
 public class Main {
     //program static variables
     //database variables
-    //check if the file is uploading to git 
     static MongoClient mongoClient = new MongoClient("localhost", 27017);
     static MongoDatabase database = mongoClient.getDatabase("stocks");
     static MongoCollection<org.bson.Document> updatingStatus = database.getCollection("updatingTable");
 
-    public static void main(String[] args) {
-        //TODO: collect data from a number of tables in the web page, implament multi threading.
-        final String mainUrl = "https://finance.yahoo.com/cryptocurrencies?count=100&offset=";
-        scrapCryptoYahoo(mainUrl);
+    public static void main(String[] args) throws InterruptedException {
+        Logger.getLogger("org.mongodb.driver").setLevel(Level.WARNING);
+
+        new Thread(() -> {
+            scrapTableData("https://finance.yahoo.com/cryptocurrencies?count=100&offset=", "Cryptocurrencies");
+        }).start();
+
+        new Thread(() -> {
+            scrapTableData("https://finance.yahoo.com/trending-tickers?count=100&offset=", "Trending Tickers");
+        }).start();
+
+        new Thread(() -> {
+            scrapTableData("https://finance.yahoo.com/most-active?count=100&offset=", "Most Actives");
+        }).start();
+
+        new Thread(() -> {
+            scrapTableData("https://finance.yahoo.com/gainers?count=100&offset=", "Gainers");
+        }).start();
+
+        new Thread(() -> {
+            scrapTableData("https://finance.yahoo.com/losers?count=100&offset=", "Losers");
+        }).start();
+
+        new Thread(() -> {
+            scrapTableData("https://finance.yahoo.com/commodities?count=100&offset=", "Commodities");
+        }).start();
+
+        new Thread(() -> {
+            scrapTableData("https://finance.yahoo.com/world-indices?count=100&offset=", "World indices");
+        }).start();
+
+        new Thread(() -> {
+            scrapTableData("https://finance.yahoo.com/currencies?count=100&offset=", "Currencies");
+        }).start();
+
+
+        new Thread(() -> {
+            scrapTableData("https://finance.yahoo.com/mutualfunds?count=100&offset=", "Top Mutual Funds");
+        }).start();
     }
 
-    public static void scrapCryptoYahoo(String mainUrl){
+    public static void scrapTableData(String mainUrl, String collectionTarget){
+        System.out.println("started workin on " + collectionTarget);
 
-        Logger.getLogger("org.mongodb.driver").setLevel(Level.WARNING);
         try{
             //getting all the data from the cryprotable at the website
             //scrap the col values
             List<String> coinIndexes = getColumbsName(mainUrl);
             List<org.bson.Document> tableRowsData = getRowsData(mainUrl, coinIndexes);//scrap the raw data of the table//a list that willl store all the coins
 
-            String collectionName = "Cryptocurrencies";
-
-            MongoCollection<org.bson.Document> collection = database.getCollection(collectionName);
-            setToUpdating(collectionName);
+            MongoCollection<org.bson.Document> collection = database.getCollection(collectionTarget);
+            setToUpdating(collectionTarget);
             clearCollection(collection);
             collection.insertMany(tableRowsData);//update the database with all the found crypto coins
-            setToUpdated(collectionName);
-            System.out.println("end of program");
+            setToUpdated(collectionTarget);
+
 
         }
         catch (Exception e){
             e.printStackTrace();
         }
+        System.out.println("end of updating for " + collectionTarget);
     }
 
     public static List<org.bson.Document> getRowsData(String url, List<String> coinIndexes) throws IOException {
@@ -72,16 +105,12 @@ public class Main {
 
             for(Element trTagsNodes : tableData)//getting all the 'tr' tags fro the table body
                 for(Element tdTagsNodes : trTagsNodes.children()){//getting all the 'td' taags from every individual row('tr' tag)
-                    tableRowsData.add(new org.bson.Document()
-                            .append(coinIndexes.get(0), tdTagsNodes.child(0).text())
-                            .append(coinIndexes.get(1), tdTagsNodes.child(1).text())
-                            .append(coinIndexes.get(2), tdTagsNodes.child(2).text())
-                            .append(coinIndexes.get(3), tdTagsNodes.child(3).text())
-                            .append(coinIndexes.get(4), tdTagsNodes.child(4).text())
-                            .append(coinIndexes.get(5), tdTagsNodes.child(5).text())
-                            .append(coinIndexes.get(6), tdTagsNodes.child(6).text())
-                            .append(coinIndexes.get(7), tdTagsNodes.child(7).text())
-                            .append(coinIndexes.get(8), tdTagsNodes.child(8).text()));
+                    org.bson.Document currntDoc = new org.bson.Document();
+                    for(int i=0; i<coinIndexes.size(); ++i)
+                        currntDoc.append(coinIndexes.get(i), tdTagsNodes.child(i).text());
+
+                    tableRowsData.add(currntDoc);
+
                     ++coinOffset;
                 }
         }while (coinOffset < fullTableSize);
@@ -109,7 +138,7 @@ public class Main {
 
         hasIndexes = Optional.ofNullable(mainPage.getElementsByClass("Mstart(15px) Fw(500) Fz(s)"));//check if there is a class of this nake
 
-        if(hasIndexes.isPresent()){//if found class return it
+        if(hasIndexes.get().size() != 0){//if found class return it
             return hasIndexes;
         }
 
@@ -118,12 +147,10 @@ public class Main {
 
     public static void setToUpdated(String collectionName){//setting the status table to updated
         updatingStatus.updateOne(Filters.eq("CollectionName", collectionName), new org.bson.Document("$set", new org.bson.Document("Status", "updated")));
-        System.out.println("set to updated");
     }
 
     public static void setToUpdating(String collectionName){//setting the status table to updating
         updatingStatus.updateOne(Filters.eq("CollectionName", collectionName), new org.bson.Document("$set", new org.bson.Document("Status", "updated")));
-        System.out.println("set to updating");
     }
 
     public static void clearCollection(MongoCollection<org.bson.Document> collection){//clearing a collection for the new valuse
