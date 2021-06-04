@@ -28,41 +28,110 @@ public class Main {
         Logger.getLogger("org.mongodb.driver").setLevel(Level.WARNING);
 
         new Thread(() -> {
-            scrapTableData("https://finance.yahoo.com/cryptocurrencies?count=100&offset=", "Cryptocurrencies");
+            while (true){
+                scrapTableData("https://finance.yahoo.com/cryptocurrencies?count=100&offset=", "Cryptocurrencies");
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
         }).start();
 
         new Thread(() -> {
-            scrapTableData("https://finance.yahoo.com/trending-tickers?count=100&offset=", "Trending Tickers");
+            while(true){
+                scrapTableData("https://finance.yahoo.com/trending-tickers?count=100&offset=", "Trending Tickers");
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
         }).start();
 
         new Thread(() -> {
-            scrapTableData("https://finance.yahoo.com/most-active?count=100&offset=", "Most Actives");
+            while(true){
+                scrapTableData("https://finance.yahoo.com/most-active?count=100&offset=", "Most Actives");
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
         }).start();
 
         new Thread(() -> {
-            scrapTableData("https://finance.yahoo.com/gainers?count=100&offset=", "Gainers");
+            while(true){
+                scrapTableData("https://finance.yahoo.com/gainers?count=100&offset=", "Gainers");
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
         }).start();
 
         new Thread(() -> {
-            scrapTableData("https://finance.yahoo.com/losers?count=100&offset=", "Losers");
+            while(true){
+                scrapTableData("https://finance.yahoo.com/losers?count=100&offset=", "Losers");
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }).start();
 
         new Thread(() -> {
-            scrapTableData("https://finance.yahoo.com/commodities?count=100&offset=", "Commodities");
+            while(true){
+                scrapTableData("https://finance.yahoo.com/commodities?count=100&offset=", "Commodities");
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }).start();
 
         new Thread(() -> {
-            scrapTableData("https://finance.yahoo.com/world-indices?count=100&offset=", "World indices");
+            while(true){
+                scrapTableData("https://finance.yahoo.com/world-indices?count=100&offset=", "World indices");
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }).start();
 
         new Thread(() -> {
-            scrapTableData("https://finance.yahoo.com/currencies?count=100&offset=", "Currencies");
+            while(true){
+                scrapTableData("https://finance.yahoo.com/currencies?count=100&offset=", "Currencies");
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }).start();
 
 
         new Thread(() -> {
-            scrapTableData("https://finance.yahoo.com/mutualfunds?count=100&offset=", "Top Mutual Funds");
+            while(true){
+                scrapTableData("https://finance.yahoo.com/mutualfunds?count=100&offset=", "Top Mutual Funds");
+                try {
+                    Thread.sleep(30000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }).start();
+
+
     }
 
     public static void scrapTableData(String mainUrl, String collectionTarget){
@@ -90,8 +159,10 @@ public class Main {
 
     public static List<org.bson.Document> getRowsData(String url, List<String> coinIndexes) throws IOException {
         List<org.bson.Document> tableRowsData = new ArrayList<>();
+
         int coinOffset = 0;
         int fullTableSize = 0;
+
         Document mainPage = Jsoup.connect(url + coinOffset).get();
         Optional<Elements> tableIndexesElement = hasTableRange(mainPage);//creating an optional elements object that will handle a case of a one page table
 
@@ -106,7 +177,7 @@ public class Main {
             for(Element trTagsNodes : tableData)//getting all the 'tr' tags fro the table body
                 for(Element tdTagsNodes : trTagsNodes.children()){//getting all the 'td' taags from every individual row('tr' tag)
                     org.bson.Document currntDoc = new org.bson.Document();
-                    for(int i=0; i<coinIndexes.size(); ++i)
+                    for(int i=0; i<coinIndexes.size()-1; ++i)// -1 to avoid using the img fileds in the table
                         currntDoc.append(coinIndexes.get(i), tdTagsNodes.child(i).text());
 
                     tableRowsData.add(currntDoc);
@@ -150,7 +221,7 @@ public class Main {
     }
 
     public static void setToUpdating(String collectionName){//setting the status table to updating
-        updatingStatus.updateOne(Filters.eq("CollectionName", collectionName), new org.bson.Document("$set", new org.bson.Document("Status", "updated")));
+        updatingStatus.updateOne(Filters.eq("CollectionName", collectionName), new org.bson.Document("$set", new org.bson.Document("Status", "updating")));
     }
 
     public static void clearCollection(MongoCollection<org.bson.Document> collection){//clearing a collection for the new valuse
